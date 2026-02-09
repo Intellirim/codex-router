@@ -1,0 +1,67 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "codex-router"
+version = "0.1.0"
+description = "Intelligent routing and orchestration for multi-model AI coding agents"
+readme = "README.md"
+authors = [
+    {name = "Intellirim", email = "hello@intellirim.com"}
+]
+license = "MIT"
+requires-python = ">=3.8"
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+]
+dependencies = [
+    "click>=8.1.0",
+    "anthropic>=0.18.0",
+    "openai>=1.12.0",
+    "google-generativeai>=0.3.0",
+    "pydantic>=2.5.0",
+    "pyyaml>=6.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.4.0",
+    "pytest-cov>=4.1.0",
+    "black>=23.0.0",
+    "ruff>=0.1.0",
+]
+
+[project.scripts]
+codex-router = "codex_router.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/Intellirim/codex-router"
+Issues = "https://github.com/Intellirim/codex-router/issues"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["codex_router*"]
+exclude = ["tests*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_functions = ["test_*"]
+addopts = "-v --tb=short"
+
+[tool.black]
+line-length = 100
+target-version = ["py38"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py38"

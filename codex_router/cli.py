@@ -14,7 +14,8 @@ from codex_router.display import Display
 @click.version_option(version=__version__)
 def main():
     """Intelligent routing and orchestration for multi-model AI coding agents."""
-    pass
+    # Click group serves as command dispatcher
+    return 0
 
 
 @main.command()

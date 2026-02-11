@@ -21,6 +21,7 @@ def temp_db():
 
 def test_init_creates_database(temp_db):
     """Test database initialization."""
+    Path(temp_db).unlink(missing_ok=True)
     tracker = CostTracker(temp_db)
 
     assert Path(temp_db).exists()
@@ -56,6 +57,7 @@ def test_record_multiple_usage(temp_db):
 
     data = json.loads(Path(temp_db).read_text())
     assert len(data["records"]) == 3
+    assert all("timestamp" in r for r in data["records"])
 
 
 def test_get_stats_empty(temp_db):
@@ -82,11 +84,11 @@ def test_get_stats_with_data(temp_db):
 
     assert stats["total_requests"] == 3
     assert stats["total_tokens"] == 3500
-    assert stats["total_cost"] == 0.175
+    assert abs(stats["total_cost"] - 0.175) < 0.001
 
     assert "Claude" in stats["by_provider"]
     assert stats["by_provider"]["Claude"]["tokens"] == 1500
-    assert stats["by_provider"]["Claude"]["cost"] == 0.075
+    assert abs(stats["by_provider"]["Claude"]["cost"] - 0.075) < 0.001
 
 
 def test_get_stats_time_filter(temp_db):

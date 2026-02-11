@@ -40,6 +40,8 @@ def test_load_config_not_found():
     with pytest.raises(FileNotFoundError):
         Config.load("/nonexistent/path/config.yaml")
 
+    assert not Path("/nonexistent/path/config.yaml").exists()
+
 
 def test_init_default_config():
     """Test initializing default configuration."""
@@ -61,6 +63,7 @@ def test_get_with_default(temp_config):
     value = config.get("nonexistent_key", "default_value")
 
     assert value == "default_value"
+    assert config.get("nonexistent_key") is None
 
 
 def test_get_existing_key(temp_config):
@@ -70,6 +73,7 @@ def test_get_existing_key(temp_config):
     value = config.get("default_model")
 
     assert value == "claude"
+    assert isinstance(value, str)
 
 
 def test_set_valid_key(temp_config):
@@ -79,6 +83,7 @@ def test_set_valid_key(temp_config):
     config.set("default_model", "gpt-4")
 
     assert config.get("default_model") == "gpt-4"
+    assert config.data["default_model"] == "gpt-4"
 
 
 def test_set_invalid_key(temp_config):
@@ -87,6 +92,8 @@ def test_set_invalid_key(temp_config):
 
     with pytest.raises(ValueError, match="Invalid config key"):
         config.set("invalid_key", "value")
+
+    assert "invalid_key" not in config.data
 
 
 def test_set_budget_validation(temp_config):
@@ -112,6 +119,7 @@ def test_save_config(temp_config):
 
     reloaded = Config.load(temp_config)
     assert reloaded.get("default_model") == "gpt-4"
+    assert Path(temp_config).exists()
 
 
 def test_validate_with_keys(temp_config):
@@ -119,6 +127,7 @@ def test_validate_with_keys(temp_config):
     config = Config.load(temp_config)
 
     assert config.validate() is True
+    assert config.get("anthropic_api_key")
 
 
 def test_validate_without_keys():
@@ -135,6 +144,7 @@ default_model: claude
     config = Config.load(config_path)
 
     assert config.validate() is False
+    assert not config.get("anthropic_api_key")
 
     Path(config_path).unlink()
 

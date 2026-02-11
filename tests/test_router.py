@@ -35,6 +35,7 @@ def test_analyze_complexity_high(mock_config):
     complexity = router.analyze_complexity(task)
 
     assert complexity == "high"
+    assert isinstance(complexity, str)
 
 
 def test_analyze_complexity_medium(mock_config):
@@ -45,6 +46,7 @@ def test_analyze_complexity_medium(mock_config):
     complexity = router.analyze_complexity(task)
 
     assert complexity == "medium"
+    assert complexity in ["high", "medium", "low"]
 
 
 def test_analyze_complexity_low(mock_config):
@@ -55,6 +57,7 @@ def test_analyze_complexity_low(mock_config):
     complexity = router.analyze_complexity(task)
 
     assert complexity == "low"
+    assert complexity != "high"
 
 
 def test_select_model_forced(mock_config):
@@ -65,6 +68,7 @@ def test_select_model_forced(mock_config):
     model = router.select_model(task, force_model="gpt-4")
 
     assert model == "gpt-4"
+    assert isinstance(model, str)
 
 
 def test_select_model_auto_high_complexity(mock_config):
@@ -75,6 +79,7 @@ def test_select_model_auto_high_complexity(mock_config):
     model = router.select_model(task)
 
     assert model == "claude-opus-4"
+    assert model in router.MODEL_COSTS
 
 
 def test_select_model_auto_low_complexity(mock_config):
@@ -85,6 +90,7 @@ def test_select_model_auto_low_complexity(mock_config):
     model = router.select_model(task)
 
     assert model == "gpt-3.5"
+    assert "gpt" in model.lower()
 
 
 def test_select_model_invalid_forced(mock_config):
@@ -93,6 +99,8 @@ def test_select_model_invalid_forced(mock_config):
 
     with pytest.raises(ValueError, match="Invalid model"):
         router.select_model("task", force_model="invalid-model")
+
+    assert "invalid-model" not in router.MODEL_COSTS
 
 
 def test_estimate_cost(mock_config):
@@ -132,4 +140,5 @@ default_model: claude
     with pytest.raises(ValueError, match="API key not configured"):
         router._validate_model_available("claude")
 
+    assert not config.get("anthropic_api_key")
     Path(config_path).unlink()

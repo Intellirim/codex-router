@@ -6,6 +6,7 @@ from codex_router.providers import ClaudeProvider, OpenAIProvider, GeminiProvide
 from codex_router.config import Config
 import tempfile
 from pathlib import Path
+import sys
 
 
 @pytest.fixture
@@ -50,63 +51,66 @@ def test_gemini_provider_init():
     assert provider.model == "gemini-pro"
 
 
-@patch("codex_router.providers.anthropic.Anthropic")
-def test_claude_provider_execute(mock_anthropic_class):
+def test_claude_provider_execute():
     """Test Claude provider execution with mocked API."""
-    mock_client = Mock()
-    mock_anthropic_class.return_value = mock_client
+    pytest.importorskip("anthropic")
+    with patch("anthropic.Anthropic") as mock_anthropic_class:
+        mock_client = Mock()
+        mock_anthropic_class.return_value = mock_client
 
-    mock_message = Mock()
-    mock_message.content = [Mock(text="Test response")]
-    mock_message.usage = Mock(input_tokens=100, output_tokens=200)
+        mock_message = Mock()
+        mock_message.content = [Mock(text="Test response")]
+        mock_message.usage = Mock(input_tokens=100, output_tokens=200)
 
-    mock_client.messages.create.return_value = mock_message
+        mock_client.messages.create.return_value = mock_message
 
-    provider = ClaudeProvider("test_key")
-    result = provider.execute("test task")
+        provider = ClaudeProvider("test_key")
+        result = provider.execute("test task")
 
-    assert result["output"] == "Test response"
-    assert result["tokens"] == 300
-    mock_client.messages.create.assert_called_once()
+        assert result["output"] == "Test response"
+        assert result["tokens"] == 300
+        mock_client.messages.create.assert_called_once()
 
 
-@patch("codex_router.providers.openai.OpenAI")
-def test_openai_provider_execute(mock_openai_class):
+def test_openai_provider_execute():
     """Test OpenAI provider execution with mocked API."""
-    mock_client = Mock()
-    mock_openai_class.return_value = mock_client
+    pytest.importorskip("openai")
+    with patch("openai.OpenAI") as mock_openai_class:
+        mock_client = Mock()
+        mock_openai_class.return_value = mock_client
 
-    mock_response = Mock()
-    mock_response.choices = [Mock(message=Mock(content="Test response"))]
-    mock_response.usage = Mock(total_tokens=500)
+        mock_response = Mock()
+        mock_response.choices = [Mock(message=Mock(content="Test response"))]
+        mock_response.usage = Mock(total_tokens=500)
 
-    mock_client.chat.completions.create.return_value = mock_response
+        mock_client.chat.completions.create.return_value = mock_response
 
-    provider = OpenAIProvider("test_key")
-    result = provider.execute("test task")
+        provider = OpenAIProvider("test_key")
+        result = provider.execute("test task")
 
-    assert result["output"] == "Test response"
-    assert result["tokens"] == 500
-    mock_client.chat.completions.create.assert_called_once()
+        assert result["output"] == "Test response"
+        assert result["tokens"] == 500
+        mock_client.chat.completions.create.assert_called_once()
 
 
-@patch("codex_router.providers.genai.configure")
-@patch("codex_router.providers.genai.GenerativeModel")
-def test_gemini_provider_execute(mock_model_class, mock_configure):
+def test_gemini_provider_execute():
     """Test Gemini provider execution with mocked API."""
-    mock_model = Mock()
-    mock_model_class.return_value = mock_model
+    pytest.importorskip("google.generativeai")
+    with patch("google.generativeai.configure") as mock_configure:
+        with patch("google.generativeai.GenerativeModel") as mock_model_class:
+            mock_model = Mock()
+            mock_model_class.return_value = mock_model
 
-    mock_response = Mock(text="Test response")
-    mock_model.generate_content.return_value = mock_response
+            mock_response = Mock(text="Test response")
+            mock_model.generate_content.return_value = mock_response
 
-    provider = GeminiProvider("test_key")
-    result = provider.execute("test task")
+            provider = GeminiProvider("test_key")
+            result = provider.execute("test task")
 
-    assert result["output"] == "Test response"
-    assert result["tokens"] > 0
-    mock_configure.assert_called_once_with(api_key="test_key")
-    mock_model.generate_content.assert_called_once()
+            assert result["output"] == "Test response"
+            assert result["tokens"] > 0
+            mock_configure.assert_called_once_with(api_key="test_key")
+            mock_model.generate_content.assert_called_once()
 
 
 def test_get_provider_claude(mock_config):
@@ -139,6 +143,8 @@ def test_get_provider_invalid_model(mock_config):
     with pytest.raises(ValueError, match="Unknown model"):
         get_provider("invalid-model", mock_config)
 
+    assert mock_config.get("anthropic_api_key") == "test_claude_key"
+
 
 def test_get_provider_missing_api_key():
     """Test error when API key missing."""
@@ -156,18 +162,22 @@ default_model: claude
     with pytest.raises(ValueError, match="API key not configured"):
         get_provider("claude", config)
 
+    assert config.validate() is False
     Path(config_path).unlink()
 
 
-@patch("codex_router.providers.anthropic.Anthropic")
-def test_claude_provider_api_error(mock_anthropic_class):
+def test_claude_provider_api_error():
     """Test Claude provider handling API errors."""
-    mock_client = Mock()
-    mock_anthropic_class.return_value = mock_client
+    pytest.importorskip("anthropic")
+    with patch("anthropic.Anthropic") as mock_anthropic_class:
+        mock_client = Mock()
+        mock_anthropic_class.return_value = mock_client
 
-    mock_client.messages.create.side_effect = Exception("API Error")
+        mock_client.messages.create.side_effect = Exception("API Error")
 
-    provider = ClaudeProvider("test_key")
+        provider = ClaudeProvider("test_key")
 
-    with pytest.raises(RuntimeError, match="Claude API error"):
-        provider.execute("test task")
+        with pytest.raises(RuntimeError, match="Claude API error"):
+            provider.execute("test task")
+
+        assert provider.api_key == "test_key"

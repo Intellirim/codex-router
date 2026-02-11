@@ -71,7 +71,8 @@ def task(description: str, model: str, parallel: int, budget: float):
 @main.command()
 @click.option("--show-costs", is_flag=True, help="Show cost breakdown by provider")
 @click.option("--days", "-d", type=int, default=7, help="Number of days to show")
-def status(show_costs: bool, days: int):
+@click.option("--html", is_flag=True, help="Generate HTML report and open in browser")
+def status(show_costs: bool, days: int, html: bool):
     """Show usage statistics and costs."""
     tracker = CostTracker()
     display = Display()
@@ -81,6 +82,14 @@ def status(show_costs: bool, days: int):
     except Exception as e:
         click.echo(f"Error: Failed to load statistics: {str(e)}", err=True)
         raise SystemExit(2)
+
+    if html:
+        import webbrowser
+        from codex_router.report import export_html
+        report_path = export_html(stats, days)
+        click.echo(f"Report saved: {report_path}")
+        webbrowser.open(f"file://{report_path}")
+        return
 
     if show_costs:
         display.show_cost_table(stats, days)
